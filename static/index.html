@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume × Role Fit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+    <div class="grid"></div>
+  </div>
+
+  <div class="app">
+    <header class="header">
+      <div class="badge">ATS-style keyword match • privacy-friendly (runs locally)</div>
+      <h1>Resume × Role Fit</h1>
+      <p class="tagline">Paste your resume and job description. See how you match and what to improve.</p>
+    </header>
+
+    <main class="main">
+      <section class="inputs">
+        <div class="input-card">
+          <div class="input-head">
+            <label for="resume">Resume</label>
+            <div class="mode-tabs" data-group="resume" role="tablist" aria-label="Resume input mode">
+              <button type="button" class="tab is-active" data-mode="paste" role="tab" aria-selected="true">Paste</button>
+              <button type="button" class="tab" data-mode="file" role="tab" aria-selected="false">Upload</button>
+              <button type="button" class="tab" data-mode="link" role="tab" aria-selected="false">Link</button>
+            </div>
+          </div>
+
+          <div class="mode-panel" data-group="resume" data-mode="paste">
+            <textarea id="resume" placeholder="Paste your resume text here… education, experience, skills, projects." rows="10"></textarea>
+            <p class="hint">Tip: Copy-paste from PDF/Word if you don’t want to upload files.</p>
+          </div>
+
+          <div class="mode-panel is-hidden" data-group="resume" data-mode="file">
+            <input id="resume-file" class="file" type="file" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp" />
+            <p class="hint">Supported: PDF, DOCX, TXT. Images use OCR (may require installing Tesseract).</p>
+          </div>
+
+          <div class="mode-panel is-hidden" data-group="resume" data-mode="link">
+            <input id="resume-link" class="text" type="url" inputmode="url" placeholder="Paste a link to the resume / listing (PDF, DOCX, or a webpage)" />
+            <p class="hint">If the link is private or requires login, paste the text instead.</p>
+          </div>
+        </div>
+        <div class="input-card">
+          <div class="input-head">
+            <label for="job">Job description</label>
+            <div class="mode-tabs" data-group="job" role="tablist" aria-label="Job input mode">
+              <button type="button" class="tab is-active" data-mode="paste" role="tab" aria-selected="true">Paste</button>
+              <button type="button" class="tab" data-mode="file" role="tab" aria-selected="false">Upload</button>
+              <button type="button" class="tab" data-mode="link" role="tab" aria-selected="false">Link</button>
+            </div>
+          </div>
+
+          <div class="mode-panel" data-group="job" data-mode="paste">
+            <textarea id="job" placeholder="Paste the full job description here… requirements, responsibilities, and nice-to-haves." rows="10"></textarea>
+            <p class="hint">Best results: include the “Requirements” section.</p>
+          </div>
+
+          <div class="mode-panel is-hidden" data-group="job" data-mode="file">
+            <input id="job-file" class="file" type="file" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp" />
+            <p class="hint">Supported: PDF, DOCX, TXT. Images use OCR (may require installing Tesseract).</p>
+          </div>
+
+          <div class="mode-panel is-hidden" data-group="job" data-mode="link">
+            <input id="job-link" class="text" type="url" inputmode="url" placeholder="Paste the job post link (webpage or PDF)" />
+            <p class="hint">If the job post is behind a login, paste the text instead.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button type="button" id="analyze" class="btn-analyze">Analyze fit</button>
+        <button type="button" id="sample" class="btn-secondary">Load sample</button>
+        <button type="button" id="clear" class="btn-ghost">Clear</button>
+        <p id="status" class="status" aria-live="polite"></p>
+      </div>
+
+      <section id="results" class="results hidden" aria-live="polite">
+        <div class="mini-stats" role="group" aria-label="Match summary">
+          <div class="mini-stat">
+            <div class="mini-k">Matched</div>
+            <div class="mini-v"><span id="matched-count">—</span> / <span id="required-count">—</span></div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-k">Gaps</div>
+            <div class="mini-v" id="gap-count">—</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-k">Tip</div>
+            <div class="mini-v mini-tip">Add missing skills to projects/experience bullets (only if true).</div>
+          </div>
+        </div>
+
+        <div class="score-cards">
+          <div class="score-card compatibility">
+            <div class="score-top">
+              <div>
+                <span class="score-label">Compatibility</span>
+                <p class="score-hint">How many job skills you already show</p>
+              </div>
+              <div id="compat-ring" class="ring" style="--p: 0">
+                <div class="ring-inner">
+                  <div class="ring-value"><span id="compat-value">—</span><span class="ring-suffix">%</span></div>
+                  <div class="ring-sub">match</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="score-card chance">
+            <div class="score-top">
+              <div>
+                <span class="score-label">Selection chance</span>
+                <p class="score-hint">Heuristic shortlist estimate (guidance only)</p>
+              </div>
+              <div id="chance-ring" class="ring ring-accent" style="--p: 0">
+                <div class="ring-inner">
+                  <div class="ring-value"><span id="chance-value">—</span><span class="ring-suffix">%</span></div>
+                  <div class="ring-sub">chance</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panels">
+          <div class="panel strong">
+            <h2>You’re strong in</h2>
+            <p class="panel-desc">Skills from the job that appear in your resume.</p>
+            <ul id="strong-list" class="skill-list"></ul>
+          </div>
+          <div class="panel improve">
+            <h2>Consider working on</h2>
+            <p class="panel-desc">Skills the job asks for that aren’t clearly reflected yet.</p>
+            <ul id="improve-list" class="skill-list"></ul>
+          </div>
+          <div class="panel other">
+            <h2>Other relevant skills</h2>
+            <p class="panel-desc">Skills in your resume that weren’t in the job description.</p>
+            <ul id="other-list" class="skill-list"></ul>
+          </div>
+        </div>
+
+        <div class="insights">
+          <div class="insight-card">
+            <h2>Fit summary</h2>
+            <p id="fit-summary" class="insight-text">—</p>
+          </div>
+
+          <div class="insight-card">
+            <h2>Major alignment</h2>
+            <div id="alignment-list" class="stack"></div>
+            <h3 class="subhead">Major gaps</h3>
+            <div id="gaps-list" class="stack"></div>
+          </div>
+
+          <div class="insight-card">
+            <h2>Topics to prepare</h2>
+            <div id="topics-list" class="topics"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Results are based on keyword matching. Use them as a guide, not a guarantee.</p>
+    </footer>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
