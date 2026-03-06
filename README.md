@@ -36,7 +36,7 @@ Paste your resume and a job description to see how compatible you are with the r
    python app.py
    ```
 
-4. Open **http://127.0.0.1:5000** in your browser, paste your resume and the job description, then click **Analyze fit**.
+4. Open **http://127.0.0.1:5050** in your browser, paste your resume and the job description, then click **Analyze fit**.
 
 ## How it works
 
@@ -52,5 +52,8 @@ Paste your resume and a job description to see how compatible you are with the r
 - `requirements.txt` – Python dependencies.
 
 ## Sharing and showcasing
+
+- **GitHub repo link** (e.g. `https://github.com/YourUsername/resume-job-analyzer`) shows your code and README; the app does **not** run when someone opens that link. Use this link on your resume so recruiters can view the project.
+- To **run** the app, they (or you) clone the repo and run it locally (see Setup above), or you **deploy** it for a live demo link.
 
 See **[SHOWCASE.md](SHOWCASE.md)** for where to host your code (e.g. GitHub), where to share the project (LinkedIn, resume, portfolio), and how to deploy a live version (e.g. Render, PythonAnywhere, Railway).
