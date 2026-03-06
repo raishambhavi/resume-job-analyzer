@@ -8,14 +8,17 @@ from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 from pypdf import PdfReader
 import docx
 
 from analyzer import analyze
 
-app = Flask(__name__, static_folder="static")
+# Use absolute path for static folder so it works when deployed (e.g. Render)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+app = Flask(__name__, static_folder=STATIC_DIR)
 CORS(app)
 
 
@@ -168,12 +171,15 @@ def health():
 
 @app.route("/")
 def index():
-    return send_from_directory(app.static_folder, "index.html")
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if not os.path.isfile(index_path):
+        return jsonify({"error": "index.html not found", "static_dir": STATIC_DIR}), 500
+    return send_file(index_path, mimetype="text/html")
 
 
 @app.route("/<path:path>")
 def static_files(path):
-    return send_from_directory(app.static_folder, path)
+    return send_from_directory(STATIC_DIR, path)
 
 
 if __name__ == "__main__":
