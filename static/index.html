@@ -27,17 +27,21 @@
   <div class="app">
     <nav class="auth-bar" id="authBar">
       <div class="auth-bar-inner">
-        <span id="authUser" class="auth-user"></span>
-        <span id="authUsage" class="auth-usage"></span>
-        <a href="/login" id="authLogin" class="auth-link">Log in</a>
-        <a href="/signup" id="authSignup" class="auth-link">Sign up</a>
-        <button type="button" id="authUpgrade" class="btn-upgrade hidden">Upgrade — $10/mo</button>
-        <button type="button" id="authTopup" class="btn-topup hidden">Buy top-up $1</button>
-        <button type="button" id="authLogout" class="btn-ghost hidden">Log out</button>
+        <div class="auth-bar-left">
+          <span id="authUser" class="auth-user"></span>
+          <span id="authUsage" class="auth-usage"></span>
+        </div>
+        <div class="auth-bar-right">
+          <button type="button" id="authLogin" class="auth-link btn-link">Log in</button>
+          <button type="button" id="authSignup" class="auth-link btn-link">Sign up</button>
+          <button type="button" id="authUpgrade" class="btn-upgrade hidden">Upgrade — $10/mo</button>
+          <button type="button" id="authTopup" class="btn-topup hidden">Buy top-up $1</button>
+          <button type="button" id="authLogout" class="btn-ghost hidden">Log out</button>
+        </div>
       </div>
     </nav>
     <header class="header">
-      <div class="badge">ATS-style keyword match • 20 free analyses/month • Sign up to save</div>
+      <div class="badge">ATS-style keyword match • Basic analysis free, no signup • Sign up for detailed reports</div>
       <h1>Resume × Role Fit</h1>
       <p class="tagline">Paste your resume and job description. See how you match and what to improve.</p>
     </header>
@@ -97,11 +101,15 @@
       </section>
 
       <div class="actions">
-        <button type="button" id="analyze" class="btn-analyze">Basic analysis (free)</button>
-        <button type="button" id="analyzeDetailed" class="btn-secondary hidden">Detailed report (upgraded)</button>
+        <button type="button" id="analyze" class="btn-analyze">Basic analysis</button>
+        <button type="button" id="analyzeDetailed" class="btn-secondary">Detailed analysis</button>
         <button type="button" id="sample" class="btn-secondary">Load sample</button>
         <button type="button" id="clear" class="btn-ghost">Clear</button>
         <p id="status" class="status" aria-live="polite"></p>
+      </div>
+      <div id="detailedGateMessage" class="detailed-gate hidden" role="alert">
+        <p id="detailedGateText"></p>
+        <div id="detailedGateActions" class="detailed-gate-actions"></div>
       </div>
 
       <section id="results" class="results hidden" aria-live="polite">
@@ -199,6 +207,72 @@
       <p>Results are based on keyword matching. Use them as a guide, not a guarantee.</p>
     </footer>
   </div>
+
+  <!-- Login modal -->
+  <div id="loginModal" class="modal hidden" role="dialog" aria-labelledby="loginModalTitle" aria-modal="true">
+    <div class="modal-backdrop" data-dismiss="loginModal"></div>
+    <div class="modal-box">
+      <h2 id="loginModalTitle" class="modal-title">Log in</h2>
+      <form id="loginForm" class="modal-form">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" name="email" required autocomplete="email" />
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" name="password" required autocomplete="current-password" />
+        <button type="submit" class="btn-analyze">Log in</button>
+        <button type="button" id="forgotPasswordTrigger" class="btn-ghost btn-link-small">Forgot password?</button>
+      </form>
+      <button type="button" class="modal-close" data-dismiss="loginModal" aria-label="Close">&times;</button>
+    </div>
+  </div>
+
+  <!-- Signup modal -->
+  <div id="signupModal" class="modal hidden" role="dialog" aria-labelledby="signupModalTitle" aria-modal="true">
+    <div class="modal-backdrop" data-dismiss="signupModal"></div>
+    <div class="modal-box">
+      <h2 id="signupModalTitle" class="modal-title">Sign up</h2>
+      <form id="signupForm" class="modal-form">
+        <label for="signupEmail">Email</label>
+        <input type="email" id="signupEmail" name="email" required autocomplete="email" />
+        <label for="signupPassword">Password</label>
+        <input type="password" id="signupPassword" name="password" required autocomplete="new-password" minlength="6" />
+        <button type="submit" class="btn-analyze">Create account</button>
+      </form>
+      <button type="button" class="modal-close" data-dismiss="signupModal" aria-label="Close">&times;</button>
+    </div>
+  </div>
+
+  <!-- Forgot password (request OTP) modal -->
+  <div id="forgotModal" class="modal hidden" role="dialog" aria-labelledby="forgotModalTitle" aria-modal="true">
+    <div class="modal-backdrop" data-dismiss="forgotModal"></div>
+    <div class="modal-box">
+      <h2 id="forgotModalTitle" class="modal-title">Reset password</h2>
+      <p class="modal-desc">Enter your email. We’ll send you a one-time code to reset your password.</p>
+      <form id="forgotForm" class="modal-form">
+        <label for="forgotEmail">Email</label>
+        <input type="email" id="forgotEmail" name="email" required autocomplete="email" />
+        <button type="submit" class="btn-analyze">Send OTP</button>
+      </form>
+      <button type="button" class="modal-close" data-dismiss="forgotModal" aria-label="Close">&times;</button>
+    </div>
+  </div>
+
+  <!-- Reset password (enter OTP + new password) modal -->
+  <div id="resetModal" class="modal hidden" role="dialog" aria-labelledby="resetModalTitle" aria-modal="true">
+    <div class="modal-backdrop" data-dismiss="resetModal"></div>
+    <div class="modal-box">
+      <h2 id="resetModalTitle" class="modal-title">Enter OTP and new password</h2>
+      <form id="resetForm" class="modal-form">
+        <input type="hidden" id="resetEmail" name="email" />
+        <label for="resetOtp">OTP (check your email)</label>
+        <input type="text" id="resetOtp" name="otp" required placeholder="6-digit code" maxlength="6" pattern="[0-9]*" inputmode="numeric" />
+        <label for="resetNewPassword">New password</label>
+        <input type="password" id="resetNewPassword" name="new_password" required minlength="6" autocomplete="new-password" />
+        <button type="submit" class="btn-analyze">Reset password</button>
+      </form>
+      <button type="button" class="modal-close" data-dismiss="resetModal" aria-label="Close">&times;</button>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>

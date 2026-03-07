@@ -1,10 +1,15 @@
-"""Database models: User and Analysis."""
-from datetime import datetime
+"""Database models: User, Analysis, and password-reset OTP."""
+from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+import secrets
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
+
+# OTP validity in seconds (e.g. 10 minutes)
+OTP_EXPIRY_SECONDS = 600
+OTP_LENGTH = 6
 
 
 class User(db.Model):
@@ -27,6 +32,29 @@ class User(db.Model):
     @property
     def is_upgraded(self) -> bool:
         return self.plan == "upgraded"
+
+
+class PasswordResetToken(db.Model):
+    """One-time OTP for password reset. One per email; overwritten on new request."""
+    __tablename__ = "password_reset_tokens"
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), nullable=False, index=True)
+    otp_hash = db.Column(db.String(255), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @staticmethod
+    def generate_otp() -> str:
+        return "".join(secrets.choice("0123456789") for _ in range(OTP_LENGTH))
+
+    def set_otp(self, otp: str) -> None:
+        self.otp_hash = bcrypt.generate_password_hash(otp).decode("utf-8")
+        self.expires_at = datetime.utcnow() + timedelta(seconds=OTP_EXPIRY_SECONDS)
+
+    def check_otp(self, otp: str) -> bool:
+        if datetime.utcnow() > self.expires_at:
+            return False
+        return bcrypt.check_password_hash(self.otp_hash, otp)
 
 
 class Analysis(db.Model):

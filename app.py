@@ -25,8 +25,14 @@ from config import (
     STRIPE_WEBHOOK_SECRET,
     STRIPE_PRICE_ID_MONTHLY,
     STRIPE_PRICE_ID_TOPUP,
+    MAIL_SERVER,
+    MAIL_PORT,
+    MAIL_USE_TLS,
+    MAIL_USERNAME,
+    MAIL_PASSWORD,
+    MAIL_FROM,
 )
-from models import db, bcrypt, User, Analysis
+from models import db, bcrypt, User, Analysis, PasswordResetToken
 from analyzer import analyze_basic, analyze_detailed
 
 # Use absolute path for static folder so it works when deployed (e.g. Render)
@@ -238,6 +244,75 @@ def logout():
     return jsonify({"ok": True})
 
 
+def _send_otp_email(to_email: str, otp: str) -> bool:
+    """Send OTP via SMTP if configured; otherwise log to console and return True."""
+    if not MAIL_SERVER or not MAIL_USERNAME:
+        print(f"[DEV] Password reset OTP for {to_email}: {otp}")
+        return True
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Your password reset code – Resume × Role Fit"
+        msg["From"] = MAIL_FROM
+        msg["To"] = to_email
+        text = f"Your one-time code to reset your password is: {otp}\n\nIt expires in 10 minutes.\n\nIf you didn't request this, you can ignore this email."
+        msg.attach(MIMEText(text, "plain"))
+        with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as s:
+            if MAIL_USE_TLS:
+                s.starttls()
+            if MAIL_USERNAME and MAIL_PASSWORD:
+                s.login(MAIL_USERNAME, MAIL_PASSWORD)
+            s.sendmail(MAIL_FROM, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        print(f"Failed to send OTP email: {e}")
+        return False
+
+
+@app.route("/api/forgot-password", methods=["POST"])
+def forgot_password():
+    data = request.get_json(force=True, silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        return jsonify({"error": "Email is required."}), 400
+    user = User.query.filter_by(email=email).first()
+    if user:
+        token = PasswordResetToken.query.filter_by(email=email).first()
+        if not token:
+            token = PasswordResetToken(email=email, otp_hash="")
+            db.session.add(token)
+        otp = PasswordResetToken.generate_otp()
+        token.set_otp(otp)
+        db.session.commit()
+        if not _send_otp_email(email, otp):
+            return jsonify({"error": "Could not send email. Try again later."}), 503
+    return jsonify({"ok": True, "message": "If an account exists for this email, you will receive a code shortly."})
+
+
+@app.route("/api/reset-password", methods=["POST"])
+def reset_password():
+    data = request.get_json(force=True, silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    otp = (data.get("otp") or "").strip()
+    new_password = data.get("new_password") or ""
+    if not email or not otp or not new_password:
+        return jsonify({"error": "Email, OTP, and new password are required."}), 400
+    if len(new_password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters."}), 400
+    token = PasswordResetToken.query.filter_by(email=email).first()
+    if not token or not token.check_otp(otp):
+        return jsonify({"error": "Invalid or expired code. Request a new one."}), 400
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "Account not found."}), 404
+    user.set_password(new_password)
+    db.session.delete(token)
+    db.session.commit()
+    return jsonify({"ok": True, "message": "Password updated. You can log in now."})
+
+
 @app.route("/api/me", methods=["GET"])
 def me():
     user = _current_user()
@@ -258,15 +333,14 @@ def me():
 
 @app.route("/api/analyze", methods=["POST"])
 def run_analyze():
+    """Basic analysis: no login required. If logged in, usage is tracked and limited."""
     user = _current_user()
-    if not user:
-        return jsonify({"error": "Please sign up or log in to run an analysis."}), 401
     client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
     if _rate_limit_exceeded(client_ip):
         return jsonify({"error": "Too many requests. Please wait a minute and try again."}), 429
-    basic_used = _basic_used_this_month(user.id)
-    if basic_used >= FREE_BASIC_ANALYSES_PER_MONTH:
-        return jsonify({"error": f"You've used all {FREE_BASIC_ANALYSES_PER_MONTH} free analyses this month. Upgrade for detailed reports and more."}), 402
+    basic_used = _basic_used_this_month(user.id) if user else 0
+    if user and basic_used >= FREE_BASIC_ANALYSES_PER_MONTH:
+        return jsonify({"error": f"You've used all {FREE_BASIC_ANALYSES_PER_MONTH} basic analyses this month. Sign up or upgrade for more."}), 402
     try:
         if request.is_json:
             data = request.get_json(force=True, silent=True) or {}
@@ -280,10 +354,13 @@ def run_analyze():
             return jsonify({"error": "Both resume and job description are required. Please provide text, a link, or a file for each."}), 400
 
         result = analyze_basic(resume, job_description)
-        rec = Analysis(user_id=user.id, analysis_type="basic")
-        db.session.add(rec)
-        db.session.commit()
-        result["usage"] = {"basic_used": basic_used + 1, "basic_limit": FREE_BASIC_ANALYSES_PER_MONTH}
+        if user:
+            rec = Analysis(user_id=user.id, analysis_type="basic")
+            db.session.add(rec)
+            db.session.commit()
+            result["usage"] = {"basic_used": basic_used + 1, "basic_limit": FREE_BASIC_ANALYSES_PER_MONTH}
+        else:
+            result["usage"] = None
         return jsonify(result)
     except requests.HTTPError as e:
         return jsonify({"error": f"Failed to fetch link content: {str(e)}"}), 400

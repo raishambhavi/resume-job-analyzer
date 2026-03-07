@@ -124,7 +124,6 @@ Requirements:
       authUpgradeBtn.classList.add("hidden");
       authTopupBtn.classList.add("hidden");
       authLogoutBtn.classList.add("hidden");
-      analyzeDetailedBtn.classList.add("hidden");
       return;
     }
     authLoginEl.classList.add("hidden");
@@ -136,7 +135,6 @@ Requirements:
     authUsageEl.textContent = `Basic: ${basic}/${basicLimit}/mo`;
     if (user.plan === "upgraded") {
       authUpgradeBtn.classList.add("hidden");
-      analyzeDetailedBtn.classList.remove("hidden");
       const det = usageData?.detailed_used ?? usage?.detailed_used ?? 0;
       const detLimit = usageData?.detailed_limit ?? usage?.detailed_limit ?? 20;
       authUsageEl.textContent += ` • Detailed: ${det}/${detLimit}`;
@@ -146,8 +144,55 @@ Requirements:
     } else {
       authUpgradeBtn.classList.remove("hidden");
       authTopupBtn.classList.add("hidden");
-      analyzeDetailedBtn.classList.add("hidden");
     }
+  }
+
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("hidden");
+  }
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("hidden");
+  }
+
+  function showDetailedGate(message, showSignup, showLogin, showUpgrade) {
+    const gateEl = document.getElementById("detailedGateMessage");
+    const textEl = document.getElementById("detailedGateText");
+    const actionsEl = document.getElementById("detailedGateActions");
+    if (!gateEl || !textEl || !actionsEl) return;
+    textEl.textContent = message;
+    actionsEl.innerHTML = "";
+    if (showSignup) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn-analyze";
+      b.textContent = "Sign up";
+      b.addEventListener("click", () => { gateEl.classList.add("hidden"); openModal("signupModal"); });
+      actionsEl.appendChild(b);
+    }
+    if (showLogin) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn-secondary";
+      b.textContent = "Log in";
+      b.addEventListener("click", () => { gateEl.classList.add("hidden"); openModal("loginModal"); });
+      actionsEl.appendChild(b);
+    }
+    if (showUpgrade && authUpgradeBtn) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn-upgrade";
+      b.textContent = "Upgrade — $10/mo";
+      b.addEventListener("click", () => authUpgradeBtn.click());
+      actionsEl.appendChild(b);
+    }
+    gateEl.classList.remove("hidden");
+  }
+
+  function hideDetailedGate() {
+    const gateEl = document.getElementById("detailedGateMessage");
+    if (gateEl) gateEl.classList.add("hidden");
   }
 
   async function loadAuth() {
@@ -336,6 +381,7 @@ Requirements:
   });
 
   analyzeBtn.addEventListener("click", async () => {
+    hideDetailedGate();
     const formData = new FormData();
     const okResume = validateAndAppend(formData, "resume");
     const okJob = validateAndAppend(formData, "job");
@@ -352,11 +398,6 @@ Requirements:
       const res = await fetch(apiBase + "/api/analyze", { method: "POST", body: formData, credentials: "include" });
       const data = await res.json();
 
-      if (res.status === 401) {
-        setStatus(data.error || "Please log in.", true);
-        window.location.href = "/login";
-        return;
-      }
       if (!res.ok) {
         setStatus(data.error || "Something went wrong.", true);
         return;
@@ -399,14 +440,28 @@ Requirements:
       const okJob = validateAndAppend(formData, "job");
       if (!okResume || !okJob) {
         setStatus("Please provide both resume and job description.", true);
+        hideDetailedGate();
         return;
       }
+      if (!currentUser) {
+        showDetailedGate("Sign up or log in to get detailed analysis (upgrade after creating an account).", true, true, false);
+        return;
+      }
+      if (currentUser.plan !== "upgraded") {
+        showDetailedGate("Upgrade to the $10/month plan to unlock detailed reports.", false, false, true);
+        return;
+      }
+      hideDetailedGate();
       analyzeDetailedBtn.disabled = true;
       setStatus("Generating detailed report…");
       try {
         const res = await fetch(apiBase + "/api/analyze-detailed", { method: "POST", body: formData, credentials: "include" });
         const data = await res.json();
-        if (res.status === 401) { setStatus("Please log in.", true); window.location.href = "/login"; return; }
+        if (res.status === 401) {
+          setStatus("Please log in.", true);
+          showDetailedGate("Sign up or log in to get detailed analysis.", true, true, false);
+          return;
+        }
         if (res.status === 402) {
           setStatus(data.error || "Limit reached.", true);
           if (data.need_topup && authTopupBtn) authTopupBtn.classList.remove("hidden");
@@ -469,6 +524,97 @@ Requirements:
       history.replaceState({}, "", window.location.pathname);
     }
   }
+
+  document.querySelectorAll("[data-dismiss]").forEach((el) => {
+    el.addEventListener("click", () => closeModal(el.getAttribute("data-dismiss")));
+  });
+
+  if (authLoginEl) authLoginEl.addEventListener("click", () => openModal("loginModal"));
+  if (authSignupEl) authSignupEl.addEventListener("click", () => openModal("signupModal"));
+
+  document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+    const password = document.getElementById("loginPassword").value;
+    try {
+      const res = await fetch(apiBase + "/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) { setStatus(data.error || "Login failed.", true); return; }
+      closeModal("loginModal");
+      setAuthUI(data.user, null);
+      loadAuth();
+      setStatus("Logged in.");
+    } catch (err) { setStatus("Network error.", true); }
+  });
+
+  document.getElementById("signupForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("signupEmail").value.trim().toLowerCase();
+    const password = document.getElementById("signupPassword").value;
+    try {
+      const res = await fetch(apiBase + "/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) { setStatus(data.error || "Sign up failed.", true); return; }
+      closeModal("signupModal");
+      setAuthUI(data.user, null);
+      loadAuth();
+      setStatus("Account created. You can now upgrade for detailed analysis.");
+    } catch (err) { setStatus("Network error.", true); }
+  });
+
+  document.getElementById("forgotPasswordTrigger")?.addEventListener("click", () => {
+    closeModal("loginModal");
+    document.getElementById("forgotEmail").value = document.getElementById("loginEmail").value || "";
+    openModal("forgotModal");
+  });
+
+  document.getElementById("forgotForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("forgotEmail").value.trim().toLowerCase();
+    try {
+      const res = await fetch(apiBase + "/api/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setStatus(data.error || "Could not send code.", true); return; }
+      closeModal("forgotModal");
+      document.getElementById("resetEmail").value = email;
+      document.getElementById("resetOtp").value = "";
+      document.getElementById("resetNewPassword").value = "";
+      openModal("resetModal");
+      setStatus("Check your email for the code.");
+    } catch (err) { setStatus("Network error.", true); }
+  });
+
+  document.getElementById("resetForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("resetEmail").value.trim().toLowerCase();
+    const otp = document.getElementById("resetOtp").value.trim();
+    const new_password = document.getElementById("resetNewPassword").value;
+    try {
+      const res = await fetch(apiBase + "/api/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp, new_password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setStatus(data.error || "Reset failed.", true); return; }
+      closeModal("resetModal");
+      setStatus(data.message || "Password updated. You can log in.");
+    } catch (err) { setStatus("Network error.", true); }
+  });
 
   initTabs();
   setMode("resume", "paste");
