@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resume × Role Fit</title>
+  <title>Resume × Role Fit – Check How Your Resume Matches a Job</title>
+  <meta name="description" content="Paste your resume and a job description. Get a compatibility score, skills you match, gaps to work on, and topics to prepare. Free, privacy-friendly tool." />
+  <meta name="robots" content="index, follow" />
+  <!-- For SEO: replace the next line with your real tool URL, e.g. https://resume-job-analyzer.onrender.com -->
+  <link rel="canonical" href="https://resume-job-analyzer.onrender.com/" />
+  <meta property="og:title" content="Resume × Role Fit – Check How Your Resume Matches a Job" />
+  <meta property="og:description" content="Paste your resume and job description. Get compatibility score, skills match, and topics to prepare. Free tool." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://resume-job-analyzer.onrender.com/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -17,8 +25,19 @@
   </div>
 
   <div class="app">
+    <nav class="auth-bar" id="authBar">
+      <div class="auth-bar-inner">
+        <span id="authUser" class="auth-user"></span>
+        <span id="authUsage" class="auth-usage"></span>
+        <a href="/login" id="authLogin" class="auth-link">Log in</a>
+        <a href="/signup" id="authSignup" class="auth-link">Sign up</a>
+        <button type="button" id="authUpgrade" class="btn-upgrade hidden">Upgrade — $10/mo</button>
+        <button type="button" id="authTopup" class="btn-topup hidden">Buy top-up $1</button>
+        <button type="button" id="authLogout" class="btn-ghost hidden">Log out</button>
+      </div>
+    </nav>
     <header class="header">
-      <div class="badge">ATS-style keyword match • privacy-friendly (runs locally)</div>
+      <div class="badge">ATS-style keyword match • 20 free analyses/month • Sign up to save</div>
       <h1>Resume × Role Fit</h1>
       <p class="tagline">Paste your resume and job description. See how you match and what to improve.</p>
     </header>
@@ -78,7 +97,8 @@
       </section>
 
       <div class="actions">
-        <button type="button" id="analyze" class="btn-analyze">Analyze fit</button>
+        <button type="button" id="analyze" class="btn-analyze">Basic analysis (free)</button>
+        <button type="button" id="analyzeDetailed" class="btn-secondary hidden">Detailed report (upgraded)</button>
         <button type="button" id="sample" class="btn-secondary">Load sample</button>
         <button type="button" id="clear" class="btn-ghost">Clear</button>
         <p id="status" class="status" aria-live="polite"></p>
@@ -167,6 +187,11 @@
             <div id="topics-list" class="topics"></div>
           </div>
         </div>
+
+        <section id="detailedResults" class="detailed-results hidden">
+          <h2>Detailed report</h2>
+          <div id="detailed-content" class="detailed-content"></div>
+        </section>
       </section>
     </main>
 

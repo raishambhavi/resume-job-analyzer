@@ -198,3 +198,97 @@ def analyze(resume_text: str, job_description: str) -> dict:
             "gap_count": len(skills_to_improve),
         },
     }
+
+
+# ---- Basic (free) output: short bullets only ----
+def analyze_basic(resume_text: str, job_description: str) -> dict:
+    """Free plan: short bullet-form output only."""
+    full = analyze(resume_text, job_description)
+    return {
+        "percentage_fit": full["compatibility_score"],
+        "chances_of_getting_hired": full["selection_chance"],
+        "skills_matched": full["strong_skills"],
+        "areas_to_improve": full["skills_to_improve"],
+        "you_are_strong_in": full["strong_skills"],
+        "areas_to_work_on": full["skills_to_improve"],
+        "other_topics_to_consider": full["other_relevant_skills"],
+        "summary": full["summary"],
+    }
+
+
+# ---- Detailed (upgraded) output: full report ----
+# Template questions by skill for "questions you might get asked"
+POSSIBLE_QUESTIONS = {
+    "python": ["Describe a project where you used Python.", "How do you handle errors and testing in Python?", "Explain the difference between list and tuple."],
+    "sql": ["Describe a complex query you wrote.", "How do you optimize slow queries?", "Explain joins and when you use each type."],
+    "javascript": ["How do you manage async code (callbacks, promises)?", "Describe a front-end feature you built.", "Explain event handling and DOM manipulation."],
+    "react": ["How do you manage state in React?", "Describe a component you built and why.", "Explain hooks (useState, useEffect)."],
+    "aws": ["Describe an AWS service you've used in production.", "How do you secure resources (IAM, VPC)?", "Explain high availability and scaling on AWS."],
+    "docker": ["How do you use Docker in your workflow?", "Explain Dockerfile best practices.", "Difference between image and container."],
+    "communication": ["Describe a time you had to explain a technical concept to non-technical stakeholders.", "How do you handle conflicting priorities?"],
+    "leadership": ["Describe a project you led.", "How do you mentor or support teammates?", "How do you make decisions under ambiguity?"],
+    "agile": ["How do you run or participate in sprints?", "Describe how you write or break down user stories.", "How do you handle scope changes?"],
+    "machine learning": ["Describe an ML model you built or tuned.", "How do you avoid overfitting?", "Explain your approach to feature engineering."],
+    "data analysis": ["Walk through an analysis you did from raw data to insight.", "How do you validate and clean data?", "How do you present findings to stakeholders?"],
+    "rest api": ["How do you design REST endpoints?", "How do you handle versioning and errors?", "Describe authentication (e.g. JWT) you've used."],
+    "system design": ["How would you design a URL shortener?", "How do you approach scaling a high-traffic system?", "Discuss trade-offs between consistency and availability."],
+}
+
+def _possible_questions_for_skills(skills: list, limit: int = 8) -> list:
+    out = []
+    for s in skills[:limit]:
+        qs = POSSIBLE_QUESTIONS.get(s, ["How have you used " + s + " in a project?", "What challenges did you face with " + s + "?"])
+        out.extend(qs[:2])
+    return out[:15]
+
+
+def _tips_from_gaps(gaps: list, strong: list, limit: int = 10) -> list:
+    tips = []
+    for g in gaps[:limit]:
+        if g in TOPIC_GUIDE:
+            tips.append(f"Add keywords or bullet points related to: {g}. Consider: " + ", ".join(TOPIC_GUIDE[g][:3]))
+        else:
+            tips.append(f"Include experience or projects that show {g}. Use the term in your resume if relevant.")
+    for s in strong[:3]:
+        tips.append(f"Keep highlighting {s}; it's a match. Add metrics or outcomes if possible.")
+    return tips[:12]
+
+
+def analyze_detailed(resume_text: str, job_description: str) -> dict:
+    """Upgraded plan: detailed report with point-wise analysis, questions, tips."""
+    full = analyze(resume_text, job_description)
+    strong = full["strong_skills"]
+    gaps = full["skills_to_improve"]
+    n_req = full["summary"]["required_count"]
+    n_mat = full["summary"]["matched_count"]
+
+    point_wise = []
+    if n_req > 0:
+        point_wise.append(f"Your resume matches {n_mat} of {n_req} required skills ({full['compatibility_score']}%).")
+    point_wise.append(f"Selection chance (heuristic): {full['selection_chance']}%.")
+    point_wise.append("Strengths: " + (", ".join(strong[:8]) if strong else "None detected from keyword match."))
+    point_wise.append("Gaps: " + (", ".join(gaps[:8]) if gaps else "No major gaps detected."))
+
+    gap_scores = []
+    for g in gaps[:10]:
+        # Simple gap "score": how critical (we don't have importance; use order as proxy)
+        gap_scores.append({"skill": g, "score": "High" if g in (gaps[:3]) else "Medium", "description": f"Job requires {g}; add evidence or keywords in resume."})
+
+    deciding = []
+    for cat in full.get("major_gaps", [])[:3]:
+        deciding.append(f"{cat['category']}: focus on " + ", ".join(cat.get("skills", [])[:4]))
+    for cat in full.get("major_alignment", [])[:2]:
+        deciding.append(f"Leverage {cat['category']}: " + ", ".join(cat.get("skills", [])[:4]))
+
+    return {
+        "match_percentage": full["compatibility_score"],
+        "point_wise_analysis": point_wise,
+        "strengths": [f"You match on: {s}" for s in strong[:10]] if strong else ["No keyword matches found; consider adding more role-relevant terms."],
+        "gaps_with_score": gap_scores,
+        "selection_chance": full["selection_chance"],
+        "skills_to_prepare": [{"skill": t["skill"], "topics": t["topics"]} for t in full["topics_to_prepare"]],
+        "deciding_factors": deciding if deciding else ["Improve keyword overlap with the job description.", "Add concrete outcomes and metrics to your bullets."],
+        "possible_questions": _possible_questions_for_skills(list(set(strong + gaps))),
+        "tips": _tips_from_gaps(gaps, strong),
+        "summary": full["summary"],
+    }

@@ -4,6 +4,22 @@ This guide is for someone new to GitHub. Follow the steps in order.
 
 ---
 
+## Important: Two different links (why the GitHub link doesn’t “run” the app)
+
+| Link | What it is | What happens when you open it |
+|------|------------|-------------------------------|
+| **GitHub repo link**<br>e.g. `https://github.com/YourUsername/resume-job-analyzer` | Where your **code** is stored. This is the link you put on your **resume**. | You see the project page: code, README, files. The app does **not** run here. GitHub only shows the project; it does not run Python/Flask apps. So it is **normal** that the app doesn’t run when you open this link. |
+| **Local app link**<br>`http://127.0.0.1:5050` | Where the app runs **on your own computer** when you start it (e.g. `./venv/bin/python app.py`). | The actual app UI (paste resume, job description, Analyze fit). This works **only on your Mac** while the server is running. Recruiters cannot open this link; it’s your machine only. |
+
+**Summary:**
+
+- **GitHub link** = for your resume. Recruiters open it to **see your code and README**. They can download the project and run it on their machine if they want. The app is **not** supposed to run in the browser when you open the GitHub link.
+- **127.0.0.1:5050** = the app **running on your computer**. You use this when you’re testing; recruiters don’t use this link.
+
+**If you want a link that recruiters can open and actually use the app in the browser** (like a live demo), you need to **deploy** the app to a hosting service (e.g. Render, Railway). That gives you a public URL like `https://your-app-name.onrender.com`. See **SHOWCASE.md** in this project for short deployment steps. Deployment is optional; many recruiters are happy with just the GitHub link.
+
+---
+
 ## Part 1: Create a GitHub account
 
 ### Step 1.1: Go to GitHub

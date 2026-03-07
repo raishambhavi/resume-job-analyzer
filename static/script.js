@@ -24,8 +24,20 @@
   const alignmentListEl = document.getElementById("alignment-list");
   const gapsListEl = document.getElementById("gaps-list");
   const topicsListEl = document.getElementById("topics-list");
+  const authUserEl = document.getElementById("authUser");
+  const authUsageEl = document.getElementById("authUsage");
+  const authLoginEl = document.getElementById("authLogin");
+  const authSignupEl = document.getElementById("authSignup");
+  const authUpgradeBtn = document.getElementById("authUpgrade");
+  const authTopupBtn = document.getElementById("authTopup");
+  const authLogoutBtn = document.getElementById("authLogout");
+  const analyzeDetailedBtn = document.getElementById("analyzeDetailed");
+  const detailedResultsEl = document.getElementById("detailedResults");
+  const detailedContentEl = document.getElementById("detailed-content");
 
   const apiBase = "";
+  let currentUser = null;
+  let usage = null;
 
   const SAMPLE_RESUME = `Shambhavi Rai
 Software Engineer / Data Analyst
@@ -82,6 +94,7 @@ Requirements:
 
   function resetUI() {
     resultsEl.classList.add("hidden");
+    if (detailedResultsEl) detailedResultsEl.classList.add("hidden");
     compatValue.textContent = "—";
     chanceValue.textContent = "—";
     matchedCountEl.textContent = "—";
@@ -97,6 +110,100 @@ Requirements:
     gapsListEl.innerHTML = "";
     topicsListEl.innerHTML = "";
     setStatus("");
+  }
+
+  function setAuthUI(user, usageData) {
+    currentUser = user;
+    usage = usageData || usage;
+    if (!authUserEl) return;
+    if (!user) {
+      authUserEl.textContent = "";
+      authUsageEl.textContent = "";
+      authLoginEl.classList.remove("hidden");
+      authSignupEl.classList.remove("hidden");
+      authUpgradeBtn.classList.add("hidden");
+      authTopupBtn.classList.add("hidden");
+      authLogoutBtn.classList.add("hidden");
+      analyzeDetailedBtn.classList.add("hidden");
+      return;
+    }
+    authLoginEl.classList.add("hidden");
+    authSignupEl.classList.add("hidden");
+    authUserEl.textContent = user.email;
+    authLogoutBtn.classList.remove("hidden");
+    const basic = usageData?.basic_used ?? usage?.basic_used ?? 0;
+    const basicLimit = usageData?.basic_limit ?? usage?.basic_limit ?? 20;
+    authUsageEl.textContent = `Basic: ${basic}/${basicLimit}/mo`;
+    if (user.plan === "upgraded") {
+      authUpgradeBtn.classList.add("hidden");
+      analyzeDetailedBtn.classList.remove("hidden");
+      const det = usageData?.detailed_used ?? usage?.detailed_used ?? 0;
+      const detLimit = usageData?.detailed_limit ?? usage?.detailed_limit ?? 20;
+      authUsageEl.textContent += ` • Detailed: ${det}/${detLimit}`;
+      if ((usageData?.detailed_extra_remaining ?? user.detailed_extra_remaining ?? 0) > 0)
+        authUsageEl.textContent += ` (+${usageData?.detailed_extra_remaining ?? user.detailed_extra_remaining} top-up)`;
+      authTopupBtn.classList.remove("hidden");
+    } else {
+      authUpgradeBtn.classList.remove("hidden");
+      authTopupBtn.classList.add("hidden");
+      analyzeDetailedBtn.classList.add("hidden");
+    }
+  }
+
+  async function loadAuth() {
+    try {
+      const res = await fetch(apiBase + "/api/me", { credentials: "include" });
+      const data = await res.json();
+      setAuthUI(data.user || null, data.usage || null);
+    } catch (e) {
+      setAuthUI(null);
+    }
+  }
+
+  function renderDetailedReport(data) {
+    if (!detailedContentEl) return;
+    let html = "";
+    html += `<p><strong>Match:</strong> ${data.match_percentage}%</p>`;
+    html += `<p><strong>Selection chance:</strong> ${data.selection_chance}%</p>`;
+    if (data.point_wise_analysis?.length) {
+      html += "<h3>Point-wise analysis</h3><ul>";
+      data.point_wise_analysis.forEach((p) => { html += "<li>" + p + "</li>"; });
+      html += "</ul>";
+    }
+    if (data.strengths?.length) {
+      html += "<h3>Strengths</h3><ul>";
+      data.strengths.forEach((s) => { html += "<li>" + s + "</li>"; });
+      html += "</ul>";
+    }
+    if (data.gaps_with_score?.length) {
+      html += "<h3>Gaps (score & description)</h3><ul>";
+      data.gaps_with_score.forEach((g) => { html += "<li><strong>" + (g.skill || g) + "</strong> — " + (g.score || "") + ": " + (g.description || "") + "</li>"; });
+      html += "</ul>";
+    }
+    if (data.deciding_factors?.length) {
+      html += "<h3>Major deciding factors</h3><ul>";
+      data.deciding_factors.forEach((d) => { html += "<li>" + d + "</li>"; });
+      html += "</ul>";
+    }
+    if (data.possible_questions?.length) {
+      html += "<h3>Questions you might get asked</h3><ul>";
+      data.possible_questions.forEach((q) => { html += "<li>" + q + "</li>"; });
+      html += "</ul>";
+    }
+    if (data.tips?.length) {
+      html += "<h3>Tips to strengthen your resume</h3><ul>";
+      data.tips.forEach((t) => { html += "<li>" + t + "</li>"; });
+      html += "</ul>";
+    }
+    if (data.skills_to_prepare?.length) {
+      html += "<h3>Relevant skills to prepare</h3>";
+      data.skills_to_prepare.forEach((st) => {
+        html += "<p><strong>" + (st.skill || st) + "</strong></p><ul>";
+        (st.topics || []).forEach((tp) => { html += "<li>" + tp + "</li>"; });
+        html += "</ul>";
+      });
+    }
+    detailedContentEl.innerHTML = html;
   }
 
   function setMode(group, mode) {
@@ -242,30 +349,41 @@ Requirements:
     setStatus("Analyzing…");
 
     try {
-      const res = await fetch(apiBase + "/api/analyze", { method: "POST", body: formData });
-
+      const res = await fetch(apiBase + "/api/analyze", { method: "POST", body: formData, credentials: "include" });
       const data = await res.json();
 
+      if (res.status === 401) {
+        setStatus(data.error || "Please log in.", true);
+        window.location.href = "/login";
+        return;
+      }
       if (!res.ok) {
         setStatus(data.error || "Something went wrong.", true);
         return;
       }
 
       resultsEl.classList.remove("hidden");
-      compatValue.textContent = data.compatibility_score;
-      chanceValue.textContent = data.selection_chance;
-      setRing(compatRing, data.compatibility_score);
-      setRing(chanceRing, data.selection_chance);
+      if (detailedResultsEl) detailedResultsEl.classList.add("hidden");
+      const score = data.percentage_fit ?? data.compatibility_score;
+      const chance = data.chances_of_getting_hired ?? data.selection_chance;
+      compatValue.textContent = score;
+      chanceValue.textContent = chance;
+      setRing(compatRing, score);
+      setRing(chanceRing, chance);
       matchedCountEl.textContent = data?.summary?.matched_count ?? "—";
       requiredCountEl.textContent = data?.summary?.required_count ?? "—";
       gapCountEl.textContent = data?.summary?.gap_count ?? "—";
-      renderSkillList(strongList, data.strong_skills || []);
-      renderSkillList(improveList, data.skills_to_improve || []);
-      renderSkillList(otherList, data.other_relevant_skills || []);
+      renderSkillList(strongList, data.you_are_strong_in || data.skills_matched || data.strong_skills || []);
+      renderSkillList(improveList, data.areas_to_work_on || data.areas_to_improve || data.skills_to_improve || []);
+      renderSkillList(otherList, data.other_topics_to_consider || data.other_relevant_skills || []);
       fitSummaryEl.textContent = data.fit_summary || "—";
-      renderCategoryStack(alignmentListEl, data.major_alignment || []);
-      renderCategoryStack(gapsListEl, data.major_gaps || []);
-      renderTopics(topicsListEl, data.topics_to_prepare || []);
+      if (data.major_alignment) renderCategoryStack(alignmentListEl, data.major_alignment);
+      else alignmentListEl.innerHTML = "";
+      if (data.major_gaps) renderCategoryStack(gapsListEl, data.major_gaps);
+      else gapsListEl.innerHTML = "";
+      if (data.topics_to_prepare) renderTopics(topicsListEl, data.topics_to_prepare);
+      else topicsListEl.innerHTML = "";
+      if (data.usage) setAuthUI(currentUser, data.usage);
       setStatus("");
     } catch (err) {
       setStatus("Network error. Is the server running?", true);
@@ -274,8 +392,87 @@ Requirements:
     }
   });
 
+  if (analyzeDetailedBtn) {
+    analyzeDetailedBtn.addEventListener("click", async () => {
+      const formData = new FormData();
+      const okResume = validateAndAppend(formData, "resume");
+      const okJob = validateAndAppend(formData, "job");
+      if (!okResume || !okJob) {
+        setStatus("Please provide both resume and job description.", true);
+        return;
+      }
+      analyzeDetailedBtn.disabled = true;
+      setStatus("Generating detailed report…");
+      try {
+        const res = await fetch(apiBase + "/api/analyze-detailed", { method: "POST", body: formData, credentials: "include" });
+        const data = await res.json();
+        if (res.status === 401) { setStatus("Please log in.", true); window.location.href = "/login"; return; }
+        if (res.status === 402) {
+          setStatus(data.error || "Limit reached.", true);
+          if (data.need_topup && authTopupBtn) authTopupBtn.classList.remove("hidden");
+          return;
+        }
+        if (!res.ok) { setStatus(data.error || "Error.", true); return; }
+        renderDetailedReport(data);
+        detailedResultsEl.classList.remove("hidden");
+        if (data.usage) setAuthUI(currentUser, data.usage);
+        setStatus("");
+      } catch (e) {
+        setStatus("Network error.", true);
+      } finally {
+        analyzeDetailedBtn.disabled = false;
+      }
+    });
+  }
+
+  if (authUpgradeBtn) {
+    authUpgradeBtn.addEventListener("click", async () => {
+      try {
+        const res = await fetch(apiBase + "/api/create-checkout-subscription", { method: "POST", credentials: "include" });
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+        else setStatus(data.error || "Could not start checkout.", true);
+      } catch (e) {
+        setStatus("Network error.", true);
+      }
+    });
+  }
+  if (authTopupBtn) {
+    authTopupBtn.addEventListener("click", async () => {
+      try {
+        const res = await fetch(apiBase + "/api/create-checkout-topup", { method: "POST", credentials: "include" });
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+        else setStatus(data.error || "Could not start checkout.", true);
+      } catch (e) {
+        setStatus("Network error.", true);
+      }
+    });
+  }
+  if (authLogoutBtn) {
+    authLogoutBtn.addEventListener("click", async () => {
+      await fetch(apiBase + "/api/logout", { method: "POST", credentials: "include" });
+      window.location.reload();
+    });
+  }
+
+  function checkStripeReturn() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("upgraded") === "1") {
+      setStatus("You’re upgraded! You now have access to detailed reports.");
+      history.replaceState({}, "", window.location.pathname);
+    } else if (params.get("topup") === "1") {
+      setStatus("Top-up added. You have one more detailed analysis.");
+      history.replaceState({}, "", window.location.pathname);
+    } else if (params.get("canceled") === "1") {
+      setStatus("Checkout was canceled.");
+      history.replaceState({}, "", window.location.pathname);
+    }
+  }
+
   initTabs();
   setMode("resume", "paste");
   setMode("job", "paste");
+  loadAuth().then(checkStripeReturn);
   resetUI();
 })();
