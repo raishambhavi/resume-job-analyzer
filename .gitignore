@@ -1,0 +1,25 @@
+# Virtual environment – do not upload to GitHub
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.so
+.env
+.venv
+
+# Local SQLite DB (production uses Postgres)
+*.db
+resume_analyzer.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
