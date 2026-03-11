@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log in – Resume × Role Fit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .auth-page { max-width: 400px; margin: 4rem auto; padding: 2rem; position: relative; z-index: 1; }
+    .auth-page h1 { font-size: 1.5rem; margin-bottom: 1.5rem; }
+    .auth-form label { display: block; font-weight: 600; margin-bottom: 0.35rem; }
+    .auth-form input[type=email], .auth-form input[type=password] {
+      width: 100%; padding: 0.75rem; margin-bottom: 1rem; border-radius: 8px;
+      border: 1px solid rgba(15,23,42,0.12); font-size: 1rem;
+    }
+    .auth-form button { width: 100%; padding: 0.75rem; margin-top: 0.5rem; cursor: pointer; }
+    .auth-link { text-align: center; margin-top: 1rem; font-size: 0.9rem; }
+    .auth-link a { color: var(--accent); }
+    .auth-nav { text-align: center; margin-bottom: 2rem; }
+    .auth-nav a { color: var(--text); font-weight: 600; text-decoration: none; }
+    .auth-nav a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+    <div class="grid"></div>
+  </div>
+  <nav class="auth-nav"><a href="/">← Resume × Role Fit</a></nav>
+  <div class="auth-page">
+    <h1>Log in</h1>
+    <form class="auth-form" id="loginForm">
+      <label for="email">Email</label>
+      <input type="email" id="email" required placeholder="you@example.com" />
+      <label for="password">Password</label>
+      <input type="password" id="password" required placeholder="••••••••" />
+      <p id="err" class="status error" style="display:none;"></p>
+      <button type="submit" class="btn-analyze">Log in</button>
+    </form>
+    <p class="auth-link">Don't have an account? <a href="/signup">Sign up</a></p>
+  </div>
+  <script>
+    document.getElementById("loginForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const err = document.getElementById("err");
+      err.style.display = "none";
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: document.getElementById("email").value,
+          password: document.getElementById("password").value
+        })
+      });
+      const data = await res.json();
+      if (res.ok) window.location.href = "/";
+      else { err.textContent = data.error || "Login failed"; err.style.display = "block"; }
+    };
+  </script>
+</body>
+</html>
