@@ -3,195 +3,337 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resume × Role Fit – Check How Your Resume Matches a Job</title>
-  <meta name="description" content="Paste your resume and a job description. Get a compatibility score, skills you match, gaps to work on, and topics to prepare. Free, privacy-friendly tool." />
-  <meta name="robots" content="index, follow" />
-  <!-- For SEO: replace the next line with your real tool URL, e.g. https://resume-job-analyzer.onrender.com -->
-  <link rel="canonical" href="https://resume-job-analyzer.onrender.com/" />
-  <meta property="og:title" content="Resume × Role Fit – Check How Your Resume Matches a Job" />
-  <meta property="og:description" content="Paste your resume and job description. Get compatibility score, skills match, and topics to prepare. Free tool." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://resume-job-analyzer.onrender.com/" />
+  <title>Clear Resume — Job fit, ATS resumes & interview prep</title>
+  <meta name="description" content="Clear Resume helps you analyze job fit, tune your resume for ATS, and prepare for interviews." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div class="bg" aria-hidden="true">
-    <div class="blob blob-a"></div>
-    <div class="blob blob-b"></div>
-    <div class="grid"></div>
-  </div>
-
-  <div class="app">
-    <header class="header">
-      <div class="badge">ATS-style keyword match • Simple and detailed analysis • Download detailed report</div>
-      <h1>Resume × Role Fit</h1>
-      <p class="tagline">Paste your resume and job description. See how you match and what to improve.</p>
-    </header>
-
-    <main class="main">
-      <section class="inputs">
-        <div class="input-card">
-          <div class="input-head">
-            <label for="resume">Resume</label>
-            <div class="mode-tabs" data-group="resume" role="tablist" aria-label="Resume input mode">
-              <button type="button" class="tab is-active" data-mode="paste" role="tab" aria-selected="true">Paste</button>
-              <button type="button" class="tab" data-mode="file" role="tab" aria-selected="false">Upload</button>
-              <button type="button" class="tab" data-mode="link" role="tab" aria-selected="false">Link</button>
-            </div>
-          </div>
-
-          <div class="mode-panel" data-group="resume" data-mode="paste">
-            <textarea id="resume" placeholder="Paste your resume text here… education, experience, skills, projects." rows="10"></textarea>
-            <p class="hint">Tip: Copy-paste from PDF/Word if you don’t want to upload files.</p>
-          </div>
-
-          <div class="mode-panel is-hidden" data-group="resume" data-mode="file">
-            <input id="resume-file" class="file" type="file" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp" />
-            <p class="hint">Supported: PDF, DOCX, TXT. Images use OCR (may require installing Tesseract).</p>
-          </div>
-
-          <div class="mode-panel is-hidden" data-group="resume" data-mode="link">
-            <input id="resume-link" class="text" type="url" inputmode="url" placeholder="Paste a link to the resume / listing (PDF, DOCX, or a webpage)" />
-            <p class="hint">If the link is private or requires login, paste the text instead.</p>
-          </div>
-        </div>
-        <div class="input-card">
-          <div class="input-head">
-            <label for="job">Job description</label>
-            <div class="mode-tabs" data-group="job" role="tablist" aria-label="Job input mode">
-              <button type="button" class="tab is-active" data-mode="paste" role="tab" aria-selected="true">Paste</button>
-              <button type="button" class="tab" data-mode="file" role="tab" aria-selected="false">Upload</button>
-              <button type="button" class="tab" data-mode="link" role="tab" aria-selected="false">Link</button>
-            </div>
-          </div>
-
-          <div class="mode-panel" data-group="job" data-mode="paste">
-            <textarea id="job" placeholder="Paste the full job description here… requirements, responsibilities, and nice-to-haves." rows="10"></textarea>
-            <p class="hint">Best results: include the “Requirements” section.</p>
-          </div>
-
-          <div class="mode-panel is-hidden" data-group="job" data-mode="file">
-            <input id="job-file" class="file" type="file" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp" />
-            <p class="hint">Supported: PDF, DOCX, TXT. Images use OCR (may require installing Tesseract).</p>
-          </div>
-
-          <div class="mode-panel is-hidden" data-group="job" data-mode="link">
-            <input id="job-link" class="text" type="url" inputmode="url" placeholder="Paste the job post link (webpage or PDF)" />
-            <p class="hint">If the job post is behind a login, paste the text instead.</p>
-          </div>
-        </div>
-      </section>
-
-      <div class="actions">
-        <button type="button" id="analyze" class="btn-analyze">Basic analysis</button>
-        <button type="button" id="analyzeDetailed" class="btn-secondary">Detailed analysis</button>
-        <button type="button" id="sample" class="btn-secondary">Load sample</button>
-        <button type="button" id="clear" class="btn-ghost">Clear</button>
-        <p id="status" class="status" aria-live="polite"></p>
+<body class="cr-body">
+  <div class="cr-shell">
+    <aside class="cr-sidebar" aria-label="Main navigation">
+      <div class="cr-brand">Clear Resume</div>
+      <nav class="cr-nav">
+        <button type="button" class="cr-nav-item is-active" data-nav="home"><span class="cr-nav-ic" aria-hidden="true">⌂</span> Home</button>
+        <button type="button" class="cr-nav-item" data-nav="job-fit"><span class="cr-nav-ic" aria-hidden="true">◎</span> Job-Fit Analyser</button>
+        <button type="button" class="cr-nav-item" data-nav="resume-builder"><span class="cr-nav-ic" aria-hidden="true">▤</span> Resume Builder</button>
+        <button type="button" class="cr-nav-item" data-nav="interview"><span class="cr-nav-ic" aria-hidden="true">💬</span> Interview Preparation</button>
+        <button type="button" class="cr-nav-item" data-nav="account"><span class="cr-nav-ic" aria-hidden="true">⚙</span> Account Settings</button>
+      </nav>
+      <div class="cr-sidebar-foot">
+        <p class="cr-sidebar-hint">Keyword-aware tools — not a hiring guarantee.</p>
       </div>
+    </aside>
 
-      <section id="results" class="results hidden" aria-live="polite">
-        <div class="mini-stats" role="group" aria-label="Match summary">
-          <div class="mini-stat">
-            <div class="mini-k">Matched</div>
-            <div class="mini-v"><span id="matched-count">—</span> / <span id="required-count">—</span></div>
-          </div>
-          <div class="mini-stat">
-            <div class="mini-k">Gaps</div>
-            <div class="mini-v" id="gap-count">—</div>
-          </div>
-          <div class="mini-stat">
-            <div class="mini-k">Tip</div>
-            <div class="mini-v mini-tip">Add missing skills to projects/experience bullets (only if true).</div>
+    <div class="cr-content">
+      <header class="cr-topbar">
+        <div class="cr-topbar-inner">
+          <span class="cr-topbar-msg">Sharpen your story — from resume to interview.</span>
+          <div class="cr-topbar-actions" id="auth-bar">
+            <button type="button" class="cr-btn-ghost" id="btn-open-login">Sign in</button>
+            <button type="button" class="cr-btn-accent" id="btn-open-signup">Sign up</button>
+            <span class="cr-user-info hidden" id="auth-user-wrap">
+              <span id="auth-user-email"></span>
+              <button type="button" class="cr-btn-ghost sm" id="btn-logout">Log out</button>
+            </span>
           </div>
         </div>
+      </header>
 
-        <div class="score-cards">
-          <div class="score-card compatibility">
-            <div class="score-top">
-              <div>
-                <span class="score-label">Compatibility</span>
-                <p class="score-hint">How many job skills you already show</p>
-              </div>
-              <div id="compat-ring" class="ring" style="--p: 0">
-                <div class="ring-inner">
-                  <div class="ring-value"><span id="compat-value">—</span><span class="ring-suffix">%</span></div>
-                  <div class="ring-sub">match</div>
-                </div>
-              </div>
+      <main class="cr-pages">
+        <!-- Home -->
+        <section class="cr-page" data-page="home" id="page-home">
+          <div class="cr-hero">
+            <h1>Welcome to Clear Resume</h1>
+            <p class="cr-lead">Match your resume to real roles, tighten ATS keywords, and walk into interviews with confident answers.</p>
+            <div class="cr-hero-actions">
+              <button type="button" class="cr-btn-accent" id="hero-signup">Create an account</button>
+              <button type="button" class="cr-btn-secondary" id="hero-login">Sign in</button>
+              <button type="button" class="cr-btn-ghost" data-goto="job-fit">Try Job-Fit Analyser</button>
             </div>
           </div>
-          <div class="score-card chance">
-            <div class="score-top">
-              <div>
-                <span class="score-label">Selection chance</span>
-                <p class="score-hint">Heuristic shortlist estimate (guidance only)</p>
-              </div>
-              <div id="chance-ring" class="ring ring-accent" style="--p: 0">
-                <div class="ring-inner">
-                  <div class="ring-value"><span id="chance-value">—</span><span class="ring-suffix">%</span></div>
-                  <div class="ring-sub">chance</div>
-                </div>
-              </div>
-            </div>
+          <div class="cr-card-grid">
+            <article class="cr-card">
+              <h3>Job-Fit Analyser</h3>
+              <p>Fit score, selection heuristic, ATS check, gaps, and company interview context.</p>
+              <button type="button" class="cr-link-btn" data-goto="job-fit">Open →</button>
+            </article>
+            <article class="cr-card">
+              <h3>Resume Builder</h3>
+              <p>Pull keywords from the job description and preview ATS-friendly layouts.</p>
+              <button type="button" class="cr-link-btn" data-goto="resume-builder">Open →</button>
+            </article>
+            <article class="cr-card">
+              <h3>Interview Preparation</h3>
+              <p>15 tailored questions — behavioral and technical — with frameworks to answer well.</p>
+              <button type="button" class="cr-link-btn" data-goto="interview">Open →</button>
+            </article>
           </div>
-        </div>
-
-        <div class="panels">
-          <div class="panel strong">
-            <h2>You’re strong in</h2>
-            <p class="panel-desc">Skills from the job that appear in your resume.</p>
-            <ul id="strong-list" class="skill-list"></ul>
-          </div>
-          <div class="panel improve">
-            <h2>Consider working on</h2>
-            <p class="panel-desc">Skills the job asks for that aren’t clearly reflected yet.</p>
-            <ul id="improve-list" class="skill-list"></ul>
-          </div>
-          <div class="panel other">
-            <h2>Other relevant skills</h2>
-            <p class="panel-desc">Skills in your resume that weren’t in the job description.</p>
-            <ul id="other-list" class="skill-list"></ul>
-          </div>
-        </div>
-
-        <div class="insights">
-          <div class="insight-card">
-            <h2>Fit summary</h2>
-            <p id="fit-summary" class="insight-text">—</p>
-          </div>
-
-          <div class="insight-card">
-            <h2>Major alignment</h2>
-            <div id="alignment-list" class="stack"></div>
-            <h3 class="subhead">Major gaps</h3>
-            <div id="gaps-list" class="stack"></div>
-          </div>
-
-          <div class="insight-card">
-            <h2>Topics to prepare</h2>
-            <div id="topics-list" class="topics"></div>
-          </div>
-        </div>
-
-        <section id="detailedResults" class="detailed-results hidden">
-          <div class="detailed-report-header">
-            <h2>Detailed report</h2>
-            <button type="button" id="downloadDetailed" class="btn-secondary">Download detailed analysis</button>
-          </div>
-          <div id="detailed-content" class="detailed-content"></div>
         </section>
-      </section>
-    </main>
 
-    <footer class="footer">
-      <p>Results are based on keyword matching. Use them as a guide, not a guarantee.</p>
-    </footer>
+        <!-- Job-Fit -->
+        <section class="cr-page hidden" data-page="job-fit" id="page-job-fit">
+          <h1 class="cr-page-title">Job-Fit Analyser</h1>
+          <p class="cr-page-sub">Paste or upload your resume and the job description for a full report.</p>
+          <div class="cr-two-col">
+            <div class="cr-field-block">
+              <label class="cr-label">Resume</label>
+              <div class="mode-tabs cr-mini-tabs" data-group="jf-resume" role="tablist">
+                <button type="button" class="tab is-active" data-mode="paste">Paste</button>
+                <button type="button" class="tab" data-mode="file">Upload</button>
+                <button type="button" class="tab" data-mode="link">Link</button>
+                <button type="button" class="tab" data-mode="saved">Saved</button>
+              </div>
+              <div class="mode-panel" data-group="jf-resume" data-mode="paste">
+                <textarea id="jf-resume-text" class="cr-textarea" rows="10" placeholder="Resume text…"></textarea>
+              </div>
+              <div class="mode-panel is-hidden" data-group="jf-resume" data-mode="file">
+                <input type="file" id="jf-resume-file" accept=".pdf,.docx,.txt" class="cr-file" />
+              </div>
+              <div class="mode-panel is-hidden" data-group="jf-resume" data-mode="link">
+                <input type="url" id="jf-resume-link" class="cr-input" placeholder="https://…" />
+              </div>
+              <div class="mode-panel is-hidden" data-group="jf-resume" data-mode="saved">
+                <select id="jf-resume-saved" class="cr-input"><option value="">Select a saved resume…</option></select>
+              </div>
+            </div>
+            <div class="cr-field-block">
+              <label class="cr-label">Job description</label>
+              <div class="mode-tabs cr-mini-tabs" data-group="jf-job" role="tablist">
+                <button type="button" class="tab is-active" data-mode="paste">Paste</button>
+                <button type="button" class="tab" data-mode="file">Upload</button>
+                <button type="button" class="tab" data-mode="link">Link</button>
+              </div>
+              <div class="mode-panel" data-group="jf-job" data-mode="paste">
+                <textarea id="jf-job-text" class="cr-textarea" rows="10" placeholder="Full job description…"></textarea>
+              </div>
+              <div class="mode-panel is-hidden" data-group="jf-job" data-mode="file">
+                <input type="file" id="jf-job-file" accept=".pdf,.docx,.txt" class="cr-file" />
+              </div>
+              <div class="mode-panel is-hidden" data-group="jf-job" data-mode="link">
+                <input type="url" id="jf-job-link" class="cr-input" placeholder="Job posting URL…" />
+              </div>
+              <label class="cr-label cr-mt">Company name (optional)</label>
+              <input type="text" id="jf-company" class="cr-input" placeholder="Helps tailor interview intel search" />
+            </div>
+          </div>
+          <div class="cr-actions-row">
+            <button type="button" class="cr-btn-accent" id="jf-run">Run full analysis</button>
+            <span class="cr-status" id="jf-status"></span>
+          </div>
+          <div id="jf-results" class="cr-results hidden"></div>
+        </section>
+
+        <!-- Resume Builder -->
+        <section class="cr-page hidden" data-page="resume-builder" id="page-resume-builder">
+          <h1 class="cr-page-title">Resume Builder</h1>
+          <p class="cr-hero-tag">We help you build <strong>ATS-friendly</strong> resumes — clean structure, honest keywords, layouts recruiters see every day.</p>
+          <div class="cr-two-col">
+            <div class="cr-field-block">
+              <label class="cr-label">Job description</label>
+              <textarea id="rb-jd" class="cr-textarea" rows="12" placeholder="Paste the job description to extract important keywords…"></textarea>
+            </div>
+            <div class="cr-field-block">
+              <label class="cr-label">Your resume</label>
+              <div class="mode-tabs cr-mini-tabs" data-group="rb-res" role="tablist">
+                <button type="button" class="tab is-active" data-mode="paste">Paste</button>
+                <button type="button" class="tab" data-mode="file">Upload</button>
+                <button type="button" class="tab" data-mode="saved">Saved</button>
+              </div>
+              <div class="mode-panel" data-group="rb-res" data-mode="paste">
+                <textarea id="rb-resume-text" class="cr-textarea" rows="12"></textarea>
+              </div>
+              <div class="mode-panel is-hidden" data-group="rb-res" data-mode="file">
+                <input type="file" id="rb-resume-file" accept=".pdf,.docx,.txt" class="cr-file" />
+              </div>
+              <div class="mode-panel is-hidden" data-group="rb-res" data-mode="saved">
+                <select id="rb-resume-saved" class="cr-input"><option value="">Select saved resume…</option></select>
+              </div>
+            </div>
+          </div>
+          <div class="cr-actions-row">
+            <button type="button" class="cr-btn-accent" id="rb-analyze">Analyze keywords & ATS</button>
+            <label class="cr-label-inline">Template</label>
+            <select id="rb-template" class="cr-input cr-input-inline"></select>
+            <button type="button" class="cr-btn-secondary" id="rb-preview">Preview ATS resume</button>
+          </div>
+          <p class="cr-status" id="rb-status"></p>
+          <div id="rb-output" class="cr-panel hidden"></div>
+          <div id="rb-preview-modal" class="cr-modal hidden" role="dialog" aria-modal="true">
+            <div class="cr-modal-backdrop" data-close-preview></div>
+            <div class="cr-modal-box cr-modal-wide">
+              <button type="button" class="cr-modal-x" data-close-preview aria-label="Close">×</button>
+              <h2 class="cr-modal-title">Preview</h2>
+              <iframe id="rb-preview-frame" class="cr-preview-frame" title="Resume preview"></iframe>
+              <div class="cr-preview-actions">
+                <button type="button" class="cr-btn-secondary" id="rb-download">Download HTML</button>
+                <button type="button" class="cr-btn-accent" id="rb-download-pdf">Download PDF</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Interview -->
+        <section class="cr-page hidden" data-page="interview" id="page-interview">
+          <h1 class="cr-page-title">Interview Preparation</h1>
+          <p class="cr-page-sub">Paste the role and job description. We generate 5 behavioral and 10 technical questions with answer frameworks.</p>
+          <label class="cr-label">Job description</label>
+          <textarea id="iv-jd" class="cr-textarea" rows="8"></textarea>
+          <label class="cr-label cr-mt">Resume context (optional)</label>
+          <textarea id="iv-resume" class="cr-textarea" rows="6" placeholder="Improves tailoring…"></textarea>
+          <label class="cr-label cr-mt">Company (optional)</label>
+          <input type="text" id="iv-company" class="cr-input" />
+          <div class="cr-actions-row">
+            <button type="button" class="cr-btn-accent" id="iv-run">Generate prep pack</button>
+            <span class="cr-status" id="iv-status"></span>
+          </div>
+          <div id="iv-out" class="cr-panel hidden"></div>
+        </section>
+
+        <!-- Account -->
+        <section class="cr-page hidden" data-page="account" id="page-account">
+          <h1 class="cr-page-title">Account Settings</h1>
+          <div id="account-guest" class="cr-panel">
+            <p>Sign in to manage your profile, upload resumes, and track completion.</p>
+            <button type="button" class="cr-btn-accent" id="account-login-cta">Sign in</button>
+          </div>
+          <div id="account-form-wrap" class="hidden">
+            <div class="cr-meter">
+              <div class="cr-meter-head">
+                <span>Profile complete</span>
+                <strong id="profile-pct">0%</strong>
+              </div>
+              <div class="cr-meter-bar"><div class="cr-meter-fill" id="profile-meter-fill"></div></div>
+            </div>
+
+            <h2 class="cr-subhead">Resumes</h2>
+            <p class="cr-hint">Upload multiple resumes; pick one as primary for quick fills.</p>
+            <div class="cr-upload-row">
+              <input type="text" id="up-resume-name" class="cr-input" placeholder="Label e.g. Software — 2025" />
+              <input type="file" id="up-resume-file" accept=".pdf,.docx,.txt" class="cr-file" />
+              <button type="button" class="cr-btn-secondary" id="up-resume-btn">Upload</button>
+            </div>
+            <ul id="resume-list" class="cr-resume-list"></ul>
+
+            <h2 class="cr-subhead cr-mt">Profile</h2>
+            <div class="cr-form-grid">
+              <input type="text" id="pf-first" class="cr-input" placeholder="First name" />
+              <input type="text" id="pf-last" class="cr-input" placeholder="Last name" />
+              <input type="email" id="pf-email" class="cr-input" placeholder="Email" />
+              <input type="text" id="pf-phone-cc" class="cr-input" placeholder="Country code e.g. +1" />
+              <input type="text" id="pf-phone" class="cr-input" placeholder="Phone" />
+              <input type="text" id="pf-address" class="cr-input cr-span-2" placeholder="Address" />
+              <input type="text" id="pf-city" class="cr-input" placeholder="City" />
+              <input type="text" id="pf-state" class="cr-input" placeholder="State" />
+              <input type="text" id="pf-zip" class="cr-input" placeholder="ZIP" />
+              <textarea id="pf-summary" class="cr-textarea cr-span-2" rows="3" placeholder="Profile summary"></textarea>
+              <input type="date" id="pf-birth" class="cr-input" />
+              <select id="pf-gender" class="cr-input">
+                <option value="">Gender</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="nonbinary">Non-binary</option>
+                <option value="prefer_not">Prefer not to say</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <h3 class="cr-h3">Education</h3>
+            <div id="edu-rows"></div>
+            <button type="button" class="cr-btn-ghost sm" id="edu-add">+ Add education</button>
+
+            <h3 class="cr-h3 cr-mt">Experience</h3>
+            <div id="exp-rows"></div>
+            <button type="button" class="cr-btn-ghost sm" id="exp-add">+ Add experience</button>
+
+            <h3 class="cr-h3 cr-mt">Skills <span class="cr-hint">(search & tag, max 20)</span></h3>
+            <div class="cr-tag-input">
+              <input type="text" id="skill-search" class="cr-input" placeholder="Type to search skills…" list="skill-datalist" />
+              <datalist id="skill-datalist"></datalist>
+              <button type="button" class="cr-btn-secondary sm" id="skill-add">Add</button>
+            </div>
+            <div id="skill-tags" class="cr-tags"></div>
+
+            <h3 class="cr-h3 cr-mt">Desired profiles <span class="cr-hint">(max 5)</span></h3>
+            <div class="cr-tag-input">
+              <input type="text" id="role-search" class="cr-input" placeholder="Job title…" list="role-datalist" />
+              <datalist id="role-datalist"></datalist>
+              <button type="button" class="cr-btn-secondary sm" id="role-add">Add</button>
+            </div>
+            <div id="role-tags" class="cr-tags"></div>
+
+            <div class="cr-actions-row cr-mt">
+              <button type="button" class="cr-btn-accent" id="pf-save">Save changes</button>
+              <button type="button" class="cr-btn-secondary" id="pf-logout">Log out</button>
+              <button type="button" class="cr-btn-danger" id="pf-delete">Delete account</button>
+            </div>
+            <p class="cr-status" id="pf-status"></p>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- Auth modal -->
+  <div id="auth-modal" class="cr-modal hidden" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+    <div class="cr-modal-backdrop" data-close-auth></div>
+    <div class="cr-modal-box cr-auth-box">
+      <button type="button" class="cr-modal-x" data-close-auth aria-label="Close">×</button>
+      <h2 id="auth-modal-title" class="cr-auth-title">Login</h2>
+      <div class="cr-auth-tabs" id="auth-main-tabs">
+        <button type="button" class="cr-auth-tab is-active" data-auth-tab="login">Sign in</button>
+        <button type="button" class="cr-auth-tab" data-auth-tab="signup">Sign up</button>
+      </div>
+      <div id="auth-view-login">
+        <form id="form-login" class="cr-auth-form" data-form="login">
+          <input type="email" name="email" class="cr-input" placeholder="Email" required autocomplete="email" />
+          <div class="cr-password-wrap">
+            <input type="password" name="password" id="login-password" class="cr-input" placeholder="Password" required autocomplete="current-password" />
+            <button type="button" class="cr-toggle-pw" data-toggle="login-password" aria-label="Show password">👁</button>
+          </div>
+          <button type="submit" class="cr-btn-gold">Sign in</button>
+          <p class="cr-auth-forgot"><a href="#" id="forgot-link">Forgot password?</a></p>
+        </form>
+      </div>
+      <div id="auth-view-forgot" class="hidden">
+        <p class="cr-auth-desc">Enter your email. If you have a password account, we will send a reset link.</p>
+        <form id="form-forgot" class="cr-auth-form">
+          <input type="email" id="forgot-email" class="cr-input" placeholder="Email" required autocomplete="email" />
+          <button type="submit" class="cr-btn-gold">Send reset link</button>
+          <button type="button" class="cr-btn-ghost full-width" id="forgot-back">Back to sign in</button>
+        </form>
+        <p class="cr-status" id="forgot-status"></p>
+      </div>
+      <div id="auth-view-reset" class="hidden">
+        <p class="cr-auth-desc">Choose a new password for your account.</p>
+        <form id="form-reset" class="cr-auth-form">
+          <input type="hidden" id="reset-email" />
+          <input type="hidden" id="reset-token" />
+          <div class="cr-password-wrap">
+            <input type="password" id="reset-password" class="cr-input" placeholder="New password (8+ chars)" required autocomplete="new-password" minlength="8" />
+            <button type="button" class="cr-toggle-pw" data-toggle="reset-password" aria-label="Show password">👁</button>
+          </div>
+          <button type="submit" class="cr-btn-gold">Update password</button>
+        </form>
+        <p class="cr-status" id="reset-status"></p>
+      </div>
+      <form id="form-signup" class="cr-auth-form hidden" data-form="signup">
+        <input type="email" name="email" class="cr-input" placeholder="Email" required autocomplete="email" />
+        <div class="cr-password-wrap">
+          <input type="password" name="password" id="signup-password" class="cr-input" placeholder="Password (8+ chars)" required autocomplete="new-password" />
+          <button type="button" class="cr-toggle-pw" data-toggle="signup-password" aria-label="Show password">👁</button>
+        </div>
+        <button type="submit" class="cr-btn-gold">Create account</button>
+      </form>
+      <p class="cr-auth-divider" id="oauth-divider"><span>or continue with</span></p>
+      <a class="cr-btn-google" id="btn-oauth-google" href="/api/auth/google/start">Continue with Google</a>
+      <a class="cr-btn-linkedin" id="btn-oauth-linkedin" href="/api/auth/linkedin/start">Continue with LinkedIn</a>
+      <p class="cr-auth-note" id="oauth-config-note">Configure Google / LinkedIn OAuth and redirect URLs in your hosting environment.</p>
+      <p class="cr-auth-switch" id="auth-switch-line"></p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>

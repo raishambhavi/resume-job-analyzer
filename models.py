@@ -1,67 +1,76 @@
-"""Database models: User, Analysis, and password-reset OTP."""
-from datetime import datetime, timedelta
-from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
-import secrets
+"""Database models for Clear Resume."""
+from datetime import datetime
 
-db = SQLAlchemy()
-bcrypt = Bcrypt()
-
-# OTP validity in seconds (e.g. 10 minutes)
-OTP_EXPIRY_SECONDS = 600
-OTP_LENGTH = 6
+from extensions import db, bcrypt
 
 
 class User(db.Model):
     __tablename__ = "users"
+
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    plan = db.Column(db.String(20), default="free")  # free | upgraded
-    stripe_customer_id = db.Column(db.String(255), nullable=True)
-    stripe_subscription_id = db.Column(db.String(255), nullable=True)
-    detailed_extra_remaining = db.Column(db.Integer, default=0)  # top-up analyses
+    password_hash = db.Column(db.String(255), nullable=True)
+    google_sub = db.Column(db.String(255), unique=True, nullable=True, index=True)
+    linkedin_sub = db.Column(db.String(255), unique=True, nullable=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    profile = db.relationship(
+        "UserProfileRecord",
+        backref=db.backref("user", lazy="joined"),
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    resumes = db.relationship(
+        "SavedResume",
+        backref="user",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
 
     def set_password(self, password: str) -> None:
         self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
 
     def check_password(self, password: str) -> bool:
+        if not self.password_hash:
+            return False
         return bcrypt.check_password_hash(self.password_hash, password)
 
-    @property
-    def is_upgraded(self) -> bool:
-        return self.plan == "upgraded"
+
+class UserProfileRecord(db.Model):
+    """JSON profile blob (manual fields, education, experience arrays, tags)."""
+
+    __tablename__ = "user_profiles"
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    data_json = db.Column(db.Text, nullable=False, default="{}")
+
+
+class SavedResume(db.Model):
+    __tablename__ = "saved_resumes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    display_name = db.Column(db.String(255), nullable=False)
+    content_text = db.Column(db.Text, nullable=False, default="")
+    is_primary = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class PasswordResetToken(db.Model):
-    """One-time OTP for password reset. One per email; overwritten on new request."""
+    """Single active reset request per email; token verified via bcrypt hash."""
+
     __tablename__ = "password_reset_tokens"
+
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), nullable=False, index=True)
-    otp_hash = db.Column(db.String(255), nullable=False)
+    token_hash = db.Column(db.String(255), nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    @staticmethod
-    def generate_otp() -> str:
-        return "".join(secrets.choice("0123456789") for _ in range(OTP_LENGTH))
+    def set_raw_token(self, raw: str) -> None:
+        self.token_hash = bcrypt.generate_password_hash(raw).decode("utf-8")
 
-    def set_otp(self, otp: str) -> None:
-        self.otp_hash = bcrypt.generate_password_hash(otp).decode("utf-8")
-        self.expires_at = datetime.utcnow() + timedelta(seconds=OTP_EXPIRY_SECONDS)
-
-    def check_otp(self, otp: str) -> bool:
+    def check_raw_token(self, raw: str) -> bool:
         if datetime.utcnow() > self.expires_at:
             return False
-        return bcrypt.check_password_hash(self.otp_hash, otp)
-
-
-class Analysis(db.Model):
-    __tablename__ = "analyses"
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
-    analysis_type = db.Column(db.String(20), nullable=False)  # basic | detailed
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    user = db.relationship("User", backref=db.backref("analyses", lazy="dynamic"))
+        return bcrypt.check_password_hash(self.token_hash, raw)
