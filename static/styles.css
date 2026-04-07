@@ -1022,6 +1022,13 @@ body {
   margin-top: 1rem;
 }
 
+.cr-hero-welcome {
+  width: 100%;
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  color: var(--cr-muted);
+}
+
 .cr-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

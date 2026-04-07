@@ -141,6 +141,12 @@
     if (authed) {
       els.authUserEmail.textContent = data.user?.email || "";
     }
+    const heroGuest = document.getElementById("hero-actions-guest");
+    const heroUser = document.getElementById("hero-actions-user");
+    if (heroGuest && heroUser) {
+      heroGuest.classList.toggle("hidden", authed);
+      heroUser.classList.toggle("hidden", !authed);
+    }
     return data;
   }
 
@@ -338,20 +344,34 @@
   async function runResumeBuilderAnalyze() {
     const st = document.getElementById("rb-status");
     st.textContent = "";
-    if (getMode("rb-res") === "saved") await loadResumeIntoField("rb-resume-saved", "rb-resume-text");
+    const rbMode = getMode("rb-res");
+    if (rbMode === "saved") await loadResumeIntoField("rb-resume-saved", "rb-resume-text");
     const jd = document.getElementById("rb-jd").value.trim();
     const resume = document.getElementById("rb-resume-text").value.trim();
-    if (!jd || !resume) {
+    const resumeFile = document.getElementById("rb-resume-file")?.files?.[0];
+    const hasResume = !!resumeFile || !!resume;
+    if (!jd || !hasResume) {
       st.textContent = "Job description and resume required.";
       return;
     }
-    lastRbResume = resume;
     st.textContent = "Analyzing…";
-    const res = await fetch(api + "/api/resume-builder/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job_description: jd, resume }),
-    });
+    let res;
+    if (resumeFile) {
+      const fd = new FormData();
+      fd.append("job_description", jd);
+      fd.append("resume_file", resumeFile, resumeFile.name);
+      res = await fetch(api + "/api/resume-builder/analyze", {
+        method: "POST",
+        body: fd,
+      });
+    } else {
+      lastRbResume = resume;
+      res = await fetch(api + "/api/resume-builder/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_description: jd, resume }),
+      });
+    }
     const data = await res.json();
     if (!res.ok) {
       st.textContent = data.error || "Error";
@@ -611,6 +631,36 @@
     };
   }
 
+  function mergeParsedIntoProfile(cur, parsed) {
+    const out = { ...cur };
+    const scalarKeys = [
+      "first_name",
+      "last_name",
+      "email",
+      "phone_country_code",
+      "phone",
+      "address",
+      "city",
+      "state",
+      "zip_code",
+      "profile_summary",
+    ];
+    for (const k of scalarKeys) {
+      const v = parsed[k];
+      const c = out[k];
+      if (v != null && String(v).trim() !== "" && (!c || String(c).trim() === "")) {
+        out[k] = v;
+      }
+    }
+    if ((!out.education || !out.education.length) && parsed.education?.length) {
+      out.education = parsed.education;
+    }
+    if ((!out.experience || !out.experience.length) && parsed.experience?.length) {
+      out.experience = parsed.experience;
+    }
+    return out;
+  }
+
   function applyProfileToForm(p) {
     document.getElementById("pf-first").value = p.first_name || "";
     document.getElementById("pf-last").value = p.last_name || "";
@@ -734,8 +784,34 @@
       alert(e.error || "Upload failed");
       return;
     }
+    const uploadData = await res.json();
     document.getElementById("up-resume-file").value = "";
-    loadAccountPage();
+    const parsed = uploadData.parsed_profile || {};
+    const profRes = await fetch(api + "/api/profile", { credentials: "include" });
+    if (profRes.ok) {
+      const profData = await profRes.json();
+      const merged = mergeParsedIntoProfile(profData.profile || {}, parsed);
+      if (Object.keys(parsed).length) {
+        const saveRes = await fetch(api + "/api/profile", {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile: merged }),
+        });
+        const saveData = await saveRes.json();
+        const st = document.getElementById("pf-status");
+        if (saveRes.ok) {
+          st.textContent = "Resume uploaded — filled empty fields from the file (saved).";
+          if (els.profilePct && saveData.profile_completion_percent != null) {
+            els.profilePct.textContent = saveData.profile_completion_percent + "%";
+            els.profileMeterFill.style.width = saveData.profile_completion_percent + "%";
+          }
+        } else {
+          st.textContent = saveData.error || "Could not auto-save; click Save after review.";
+        }
+      }
+    }
+    await loadAccountPage();
   });
 
   document.getElementById("edu-add").addEventListener("click", () => addEduRow({}));

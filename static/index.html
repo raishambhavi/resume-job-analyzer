@@ -47,10 +47,15 @@
           <div class="cr-hero">
             <h1>Welcome to Clear Resume</h1>
             <p class="cr-lead">Match your resume to real roles, tighten ATS keywords, and walk into interviews with confident answers.</p>
-            <div class="cr-hero-actions">
+            <div class="cr-hero-actions" id="hero-actions-guest">
               <button type="button" class="cr-btn-accent" id="hero-signup">Create an account</button>
               <button type="button" class="cr-btn-secondary" id="hero-login">Sign in</button>
               <button type="button" class="cr-btn-ghost" data-goto="job-fit">Try Job-Fit Analyser</button>
+            </div>
+            <div class="cr-hero-actions hidden" id="hero-actions-user" aria-live="polite">
+              <p class="cr-hero-welcome">You're signed in — jump back into your tools.</p>
+              <button type="button" class="cr-btn-accent" data-goto="job-fit">Job-Fit Analyser</button>
+              <button type="button" class="cr-btn-secondary" data-goto="account">Account Settings</button>
             </div>
           </div>
           <div class="cr-card-grid">

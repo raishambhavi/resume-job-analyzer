@@ -29,6 +29,7 @@ from services.ats_resume import analyze_ats_friendliness, extract_company_name_h
 from services.company_insights import build_company_insights
 from services.mail import is_mail_configured, send_email
 from services.pdf_resume import html_to_pdf_bytes
+from services.resume_parse import extract_profile_hints
 from services.resume_templates import TEMPLATES, render_resume_html
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -611,7 +612,8 @@ def upload_resume():
     r = SavedResume(user_id=u.id, display_name=display_name, content_text=text, is_primary=make_primary)
     db.session.add(r)
     db.session.commit()
-    return jsonify({"ok": True, "id": r.id, "is_primary": r.is_primary})
+    parsed = extract_profile_hints(text)
+    return jsonify({"ok": True, "id": r.id, "is_primary": r.is_primary, "parsed_profile": parsed})
 
 
 @app.route("/api/resumes/<int:rid>", methods=["GET"])
@@ -843,9 +845,15 @@ def resume_builder_analyze():
     ip = _client_ip()
     if _rate_limit_exceeded(ip):
         return jsonify({"error": "Too many requests."}), 429
-    data = request.get_json(force=True, silent=True) or {}
-    jd = (data.get("job_description") or "").strip()
-    resume = (data.get("resume") or "").strip()
+    if request.is_json:
+        data = request.get_json(force=True, silent=True) or {}
+        jd = (data.get("job_description") or "").strip()
+        resume = (data.get("resume") or "").strip()
+    else:
+        jd = (request.form.get("job_description") or "").strip()
+        resume = (request.form.get("resume_text") or "").strip()
+        if not resume and request.files.get("resume_file"):
+            resume = _extract_text_from_upload(request.files.get("resume_file")).strip()
     if not jd or not resume:
         return jsonify({"error": "job_description and resume are required."}), 400
 
